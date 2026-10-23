@@ -24,7 +24,7 @@ Javaで制作した、ターミナルで遊べるブラックジャックです�
 
 ## ゲーム画面
 
-### 1. ゲームプレイ
+### 1. ベット選択
 
 プレイヤーは所持クレジットから掛け金を選択できます。  
 500/1,000/5,000/全額から選べます。  
@@ -50,21 +50,44 @@ HIT（カードを引く）またはSTAND（勝負する）を選択できます
 
 ## 使用技術
 
-- Java（JDK21でビルド確認）
-- Java標準ライブラリ（`List`, `ArrayList`, `Collections`, `Random`, `Scanner`など）
-- ANSIエスケープシーケンス（コンソール描画）
-- `jar` / `jpackage` （JAR・Windows用EXEの作成）
+| 項目 | 内容 |
+| --- | --- |
+| 言語 | Java 21 |
+| 開発形式 | コンソールアプリケーション |
+| 主な標準ライブラリ | `List`, `ArrayList`, `Collections`, `Random`, `Scanner` |
+| コンソール描画 | `ANSIエスケープシーケンス`, `Unicode` |
+| ビルド・パッケージ化 | `javac`, `jar`, `jpackage` |
+| 配布形式 | Windouws向けEXE |
+
+外部ライブラリやデータベースは使用していません。
 
 ## 動作方法
 
-### Windows用EXEから起動
+### 1. Windows版（EXE）
 
-GitHubのReleasesにWindows用の配布ZIPを公開した場合は、ZIPを展開し、含まれるBlackJack.exeをダブルクリックしてください。  
-jpackageのapp-image形式では、BlackJack.exeだけでなく、同じフォルダのappとruntimeも必要です。  
+[**最新版をダウンロード**](https://github.com/yumeto101-eng/black-jack/releases/latest)
 
-### ソースコードから実行（PowerShell）
+**配布ファイル**：BlackJack-Windows-v1.0.0.zip. 
 
-JDK21がインストールされた環境で、Javaソースファイルのあるフォルダを開いて実行します。
+1. ZIPファイルをダウンロードして展開します。  
+2. 展開したBlackJackフォルダを開きます。  
+3. BlackJack.exeをダブルクリックして起動します。  
+4. コンソールに表示されるメニューから操作します。  
+
+Java実行環境を同梱しているため、別途Javaをインストールする必要はありません。
+
+※ `app`と`runtime`フォルダは削除しないでください。EXE単体ではなく、配布フォルダ一式が必要です。
+
+### 2. ソースコードから実行
+
+#### 必要環境
+
+- JDK 21
+- Windows PowerShell または macOS のターミナル
+
+Javaソースファイルが配置されたプロジェクトフォルダで実行してください。  
+
+#### Windows（PowerShell）
 
 ```powershell
 New-Item -ItemType Directory -Path .\out -Force | Out-Null
@@ -79,6 +102,22 @@ jar cfe black-jack.jar MainBlackJack -C out .
 java -jar black-jack.jar
 ```
 
+#### macOS（ターミナル）
+
+```ターミナル
+mkdir -p out
+javac -encoding UTF-8 -d out Card.java CardRender.java Dealer.java Deck.java GameMaster.java Hand.java Human.java MainBlackJack.java Player.java
+```
+
+実行可能なJARを作る場合：
+
+```ターミナル
+jar cfe black-jack.jar MainBlackJack -C out .
+java -jar black-jack.jar
+```
+
+JARを作成済みの場合は、`java -jar black-jack.jar`で起動できます。
+
 ※ コンソールで入力するゲームのため、JARのダブルクリックでは画面が表示されない場合があります。上記の`java -jar`コマンドを使用してください。  
 
 ## 遊び方
@@ -89,7 +128,11 @@ java -jar black-jack.jar
 4. ディーラーは、手札の合計が17以上になるまでカードを引きます（プレイヤーのブラックジャック／バースト時を除く）。
 5. 勝敗とクレジットの増減を表示し、続けるか終了するかを選びます。
 
-通常勝利の利益は掛け金と同額、ブラックジャック勝利時の利益はあ掛け金の1.5倍、引き分けは掛け金を返却します。
+### 配当ルール
+- 通常勝利：掛け金と同額の利益
+- ブラックジャック勝利：掛け金の1.5倍の利益
+- 引き分け：掛け金を返却
+- 敗北：賭け金を失う
 
 ## クラス構成
 
@@ -105,7 +148,7 @@ java -jar black-jack.jar
 | `Dealer` | ディーラーを表すクラス |
 | `CardRender` | ANSIカラーとカード反転アニメーションの描画 |
 
-## 実装で工夫した点
+## 制作で工夫した点
 
 ### クラスごとの責務分離
 
@@ -120,10 +163,24 @@ java -jar black-jack.jar
 
 `CardRender`ではカードの幅を段階的に変え、ANSI制御コードで同じ位置を描き直すことで、カードが回転して表になるような演出を実現しています。
 
+### ベット・配当管理
+
+所持クレジットから賭け金を選択し、勝敗に応じてクレジットを増減させる処理を実装しました。
+
+通常勝利・ブラックジャック勝利・引き分けなど、結果ごとに異なる配当処理を行なっています。
+
+### 複数ラウンドの進行管理
+
+1回の対戦で終了するのではなく、クレジットが残っている間は繰り返しプレイできるようにしました。
+
+ラウンドの開始から終了までの処理を整理し、継続プレイに対応しています。
+
 ## 今後の改善候補
 
 - ラウンド継続時の入力チェックをより厳密にする
 - スコア計算・勝敗判定・配当計算の自動テストを追加する
+- ターミナル環境による文字・色・アニメーション表示の違いへの対応
+- ゲーム画面や操作方法のさらなる改善
 
 ## 補足
 
